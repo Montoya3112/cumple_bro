@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Feliz Cumpleaños, Campeón!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background-color: #04060b;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            perspective: 1000px;
+            position: relative;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* FONDO DE ESTADIO CON FILTER DE CAMPEÓN */
+        .estadio-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(20, 35, 70, 0.45) 0%, rgba(4, 6, 12, 1) 90%);
+            z-index: -3;
+        }
+
+        .messi-fondo {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('messi.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            filter: brightness(0.24) contrast(1.15) blur(1px);
+            transition: opacity 1.2s ease;
+            z-index: -2;
+        }
+
+        /* FOCOS ROBÓTICOS POTENCIADOS (Rojo, Amarillo/Oro y Cyan) */
+        .luces-estadio {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .foco-haz {
+            position: absolute;
+            top: 0;
+            width: 140px;
+            height: 100vh;
+            transform-origin: top center;
+            mix-blend-mode: screen;
+            opacity: 0.6;
+        }
+        .haz-rojo {
+            left: 15%;
+            background: linear-gradient(to bottom, rgba(255, 0, 0, 0.7), transparent);
+            animation: oscilarFoco1 3.5s infinite alternate ease-in-out;
+        }
+        .haz-amarillo {
+            right: 15%;
+            background: linear-gradient(to bottom, rgba(255, 215, 0, 0.7), transparent);
+            animation: oscilarFoco2 4s infinite alternate ease-in-out;
+        }
+        .haz-cyan {
+            left: 45%;
+            background: linear-gradient(to bottom, rgba(0, 242, 254, 0.4), transparent);
+            animation: oscilarFoco3 4.8s infinite alternate ease-in-out;
+        }
+
+        /* TITULO GLOBAL CENTRADO */
+        .titulo-global {
+            display: none;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            z-index: 5;
+            animation: brillarTitulo 1.5s infinite alternate ease-in-out;
+        }
+
+        /* PANTALLA 1: WhatsApp Falso */
+        #pantalla-wa {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #111b21;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.8);
+            cursor: pointer;
+            transition: transform 0.3s;
+            width: 380px;
+            max-width: 100%;
+            z-index: 10;
+        }
+        #pantalla-wa:hover { transform: scale(1.03); }
+        .wa-box {
+            display: flex; align-items: center; background: #202c33;
+            padding: 15px; border-radius: 10px; border-left: 5px solid #00a884;
+            text-align: left; width: 100%;
+        }
+        .wa-icon { font-size: 30px; margin-right: 15px; }
+        .wa-name { font-weight: bold; color: #e9edef; display: block;}
+        .wa-size { font-size: 12px; color: #8696a0; }
+
+        /* PANTALLA 2: Zona Interactiva Centrada */
+        #pantalla-interactiva {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 650px;
+            z-index: 5;
+        }
+
+        .elementos-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 60px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .bloque-interactivo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .guia-flechas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            color: #00f2fe;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px #00f2fe;
+            margin-bottom: 20px;
+        }
+        .flecha-v { animation: reboteV 0.5s infinite alternate; font-size: 18px; }
+
+        /* PASTEL DE 3 PISOS PREMIUM */
+        .cake {
+            position: relative;
+            width: 180px;
+            height: 150px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .cake:hover { transform: scale(1.08); filter: drop-shadow(0 0 15px #ffd700); }
+        .cake-layer {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            border-radius: 10px 10px 2px 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            background: linear-gradient(to right, #b8860b, #ffd700, #b8860b);
+            border-top: 4px solid #fffdf0;
+        }
+        .cake-layer::after {
+            content: "•••• •••• ••••"; position: absolute; width: 100%; text-align: center;
+            top: 8px; left: 0; font-size: 11px; color: #ff0055; letter-spacing: 4px;
+            text-shadow: 15px 4px #00f2fe, -10px 6px #fff; opacity: 0.8;
+        }
+        .layer-1 { width: 180px; height: 50px; bottom: 0; }
+        .layer-2 { width: 140px; height: 45px; bottom: 50px; }
+        .layer-3 { width: 100px; height: 40px; bottom: 95px; }
+        
+        .candle {
+            width: 10px; height: 35px; background: linear-gradient(to right, #00f2fe, #ff0055);
+            position: absolute; bottom: 135px; left: 85px; border-radius: 3px;
+        }
+        .flame {
+            width: 16px; height: 24px; background: radial-gradient(circle, #fff, #ffea00, #ff6200);
+            border-radius: 50% 50% 20% 20%; position: absolute; bottom: 170px; left: 82px;
+            animation: flemear 0.3s infinite alternate; box-shadow: 0 0 20px #ffea00, 0 0 40px #ff6200;
+        }
+
+        /* EL BOTÓN ÉPICO POTENCIADO */
+        .btn-ramo {
+            background: linear-gradient(135deg, #ff0044 0%, #ffd700 100%);
+            border: 2px solid #fff;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(255, 0, 70, 0.5);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 12px;
+        }
+        .btn-ramo:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ff0044, 0 0 20px #ffd700;
+        }
+
+        /* Banner de Alerta que contiene texto + imagen de Messi Ramo */
+        #ramo-alerta {
+            display: none;
+            margin-top: 25px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+            animation: pulseAlerta 1s infinite alternate;
+            width: 100%;
+        }
+
+        /* Imagen de Messi Ramo que aparece dinámicamente */
+        .messi-ramo-img {
+            display: none;
+            max-width: 320px;
+            width: 85%;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+            animation: entradaImagen 0.5s ease-out;
+        }
+
+        /* BOTONES DE REGRESAR PREMIUM */
+        .btn-regresar {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ccc;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 35px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-regresar:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* PANTALLA 3: La Carta Abierta */
+        #pantalla-carta {
+            display: none;
+            width: 100%;
+            max-width: 550px;
+            background: linear-gradient(135deg, rgba(14, 23, 41, 0.96) 0%, rgba(6, 10, 18, 0.98) 100%);
+            border: 3px solid #ffd700;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
+            flex-direction: column;
+            align-items: center;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
+        }
+        #pantalla-carta.active { transform: translateY(0); opacity: 1; }
+
+        .carta-texto {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 22px;
+            border-radius: 12px;
+            text-align: left;
+            line-height: 1.7;
+            font-size: 1.05rem;
+            color: #f1f5f9;
+            max-height: 380px;
+            overflow-y: auto;
+            width: 100%;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+        }
+        .carta-texto p { margin-bottom: 14px; }
+        .destacado { color: #ffd700; font-weight: 700; text-shadow: 0 0 5px rgba(255,215,0,0.4); }
+
+        /* KEYFRAMES */
+        @keyframes reboteV { from { transform: translateY(-5px); } to { transform: translateY(5px); } }
+        @keyframes flemear { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1.15) rotate(3deg); } }
+        @keyframes brillarTitulo { 
+            from { text-shadow: 0 0 20px #ffd700, 0 0 30px #ff0044; } 
+            to { text-shadow: 0 0 30px #00f2fe, 0 0 40px #ffd700; } 
+        }
+        @keyframes pulseAlerta { from { box-shadow: 0 0 10px rgba(255,215,0,0.2); } to { box-shadow: 0 0 25px rgba(255,215,0,0.5); } }
+        @keyframes entradaImagen { from { opacity: 0; transform: scale(0.8) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        /* Oscilación de Luces de Estadio */
+        @keyframes oscilarFoco1 { from { transform: rotate(-25deg) scaleX(1); } to { transform: rotate(20deg) scaleX(1.4); } }
+        @keyframes oscilarFoco2 { from { transform: rotate(25deg) scaleX(1.4); } to { transform: rotate(-20deg) scaleX(1); } }
+        @keyframes oscilarFoco3 { from { transform: rotate(-15deg) scaleX(1); } to { transform: rotate(15deg) scaleX(1.2); } }
+
+        .carta-texto::-webkit-scrollbar { width: 6px; }
+        .carta-texto::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <audio id="audio-cumple" src="messiaudio.mp3" loop></audio>
+
+    <div class="estadio-bg"></div>
+    <div id="m-fondo" class="messi-fondo"></div>
+    
+    <div id="luces" class="luces-estadio">
+        <div class="foco-haz haz-rojo"></div>
+        <div class="foco-haz haz-amarillo"></div>
+        <div class="foco-haz haz-cyan"></div>
+    </div>
+
+    <h1 id="titulazo" class="titulo-global">¡FELIZ CUMPLEAÑOS, CAMPEÓN! 🎉</h1>
+
+    <div id="pantalla-wa" onclick="activarSorpresa()">
+        <p style="color: #8696a0; font-size: 13px; margin-bottom: 12px;">Hoy • 12:00 a. m.</p>
+        <div class="wa-box">
+            <div class="wa-icon">📄</div>
+            <div>
+                <span class="wa-name">Regalo_Del_GOAT.html</span>
+                <span class="wa-size">HTML • 3.5 MB</span>
+            </div>
+        </div>
+        <p style="color: #00a884; font-size: 13px; margin-top: 15px; font-weight: bold;">Tap para descargar y abrir 👇</p>
+    </div>
+
+    <div id="pantalla-interactiva">
+        <div class="elementos-container">
+            
+            <div class="bloque-interactivo">
+                <div class="guia-flechas">
+                    <span class="flecha-v">👇</span>
+                    <span>SOPLA EL PASTEL</span>
+                    <span class="flecha-v">👇</span>
+                </div>
+                <div class="cake" onclick="apagarYMostrarCarta()">
+                    <div class="flame" id="flama-vela"></div>
+                    <div class="candle"></div>
+                    <div class="cake-layer layer-3"></div>
+                    <div class="cake-layer layer-2"></div>
+                    <div class="cake-layer layer-1"></div>
+                </div>
+            </div>
+
+            <div class="bloque-interactivo">
+                <div class="guia-flechas" style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">
+                    <span class="flecha-v">👇</span>
+                    <span>EFECTO ESPECIAL</span>
+                    <span class="flecha-v">👇</span>
+                </div>
+                <button class="btn-ramo" onclick="interactuarFestejo()">🔥 ¡TÓCAME! 🔥</button>
+            </div>
+
+        </div>
+
+        <div id="ramo-alerta">
+            <p style="margin-bottom: 5px;">🔥 ¡Eso es, mi hermano real! Aquí festejamos a los grandes como se debe. ¡AHORA SOPLA EL PASTEL PARA LEER TU CARTA! 🎂🏆⭐</p>
+            <img src="messi_ramo.png" alt="Messi Sorpresa" id="img-ramo" class="messi-ramo-img">
+        </div>
+
+        <button class="btn-regresar" onclick="regresarAWa()">⬅ Volver al inicio</button>
+    </div>
+
+    <div id="pantalla-carta">
+        <div class="carta-texto">
+            <p>Hola bro, ¿cómo andas?</p>
+            <p>Espero que hayas amanecido muy bien. Hoy paso a desearte un muy feliz cumpleaños. Espero que cumplas todas tus metas y sueños, y que Dios te llene de salud, felicidad y muchas bendiciones.</p>
+            <p>Te escribo esto de todo corazón. Dicen que los pequeños detalles valen mucho, así que espero que te guste este pequeño detalle. Eres mi mejor amigo, mi real y, sobre todo, mi hermano.</p>
+            <p>Cuídate mucho, bro. Sabes que siempre voy a estar para ti, en las buenas y en las malas. <span class="destacado">Ya sabes que algún día vamos a ser ricos, nos vamos a hacer millonarios</span> para traer unas bebitas bien acá jajaja.</p>
+            <p>Échale muchas ganas a todas tus metas. Cuando te caigas, aquí voy a estar para ayudarte a levantarte. Nunca dejes de luchar por lo que quieres.</p>
+            <p>Te deseo lo mejor en este día. Disfrútalo mucho con tu familia y las personas que te quieren. Te aprecio un chingo, hermano.</p>
+            <p class="destacado" style="font-size: 1.2rem; text-align: center; margin-top: 15px;">¡Feliz cumpleaños, bro! 🎉🎂🥳</p>
+            <p style="text-align: center; font-size: 0.95rem; color: #cbd5e1; margin-top: 5px;">Y ya ponte las pilas, y amos por unas bebitas jaja 🫦🥵🤙🏼</p>
+        </div>
+
+        <button class="btn-regresar" onclick="regresarAlPastel()">🎂 Regresar al Pastel</button>
+    </div>
+
+    <script>
+        const miAudio = document.getElementById('audio-cumple');
+
+        // Entrar a la zona interactiva (Y encender la música)
+        function activarSorpresa() {
+            document.getElementById('pantalla-wa').style.display = 'none';
+            document.getElementById('titulazo').style.display = 'block';
+            document.getElementById('pantalla-interactiva').style.display = 'flex';
+            document.getElementById('luces').style.display = 'block';
+            document.getElementById('m-fondo').style.opacity = "1";
+            
+            // REPRODUCIR AUDIO
+            miAudio.play().catch(error => {
+                console.log("El navegador bloqueó el audio momentáneamente:", error);
+            });
+        }
+
+        // Regresar de la zona del pastel a WhatsApp (Pausa la música)
+        function regresarAWa() {
+            document.getElementById('pantalla-interactiva').style.display = 'none';
+            document.getElementById('titulazo').style.display = 'none';
+            document.getElementById('luces').style.display = 'none';
+            document.getElementById('m-fondo').style.opacity = "0";
+            document.getElementById('ramo-alerta').style.display = 'none';
+            document.getElementById('img-ramo').style.display = 'none';
+            document.getElementById('pantalla-wa').style.display = 'flex';
+            
+            // DETENER AUDIO Y REINICIAR
+            miAudio.pause();
+            miAudio.currentTime = 0;
+        }
+
+        // Botón de efecto especial
+        function interactuarFestejo() {
+            document.getElementById('ramo-alerta').style.display = 'block';
+            document.getElementById('img-ramo').style.display = 'inline-block';
+            
+            confetti({
+                particleCount: 70,
+                spread: 80,
+                origin: { y: 0.65 },
+                colors: ['#ff0000', '#ffd700', '#ffffff', '#00f2fe']
+            });
+        }
+
+        // Soplar pastel y pasar a la carta (La música sigue sonando de fondo)
+        function apagarYMostrarCarta() {
+            document.getElementById('flama-vela').style.display = 'none';
+            
+            setTimeout(() => {
+                document.getElementById('pantalla-interactiva').style.display = 'none';
+                const carta = document.getElementById('pantalla-carta');
+                carta.style.display = 'flex';
+                
+                setTimeout(() => {
+                    carta.classList.add('active');
+                    lanzarMegaConfetiFinal();
+                }, 50);
+            }, 400);
+        }
+
+        // Regresar de la carta al pastel
+        function regresarAlPastel() {
+            const carta = document.getElementById('pantalla-carta');
+            carta.classList.remove('active');
+            
+            setTimeout(() => {
+                carta.style.display = 'none';
+                document.getElementById('pantalla-interactiva').style.display = 'flex';
+                document.getElementById('flama-vela').style.display = 'block';
+            }, 400);
+        }
+
+        function lanzarMegaConfetiFinal() {
+            var duration = 7 * 1000;
+            var end = Date.now() + duration;
+
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 65, origin: { x: 0 }, colors: ['#ffd700', '#ff0000', '#ffffff', '#00f2fe'] });
+                confetti({ particleCount: 5, angle: 120, spread: 65, origin: { x: 1 }, colors: ['#ffd700', '#ff0000', '#ffffff', '#00f2fe'] });
+
+                if (Date.now() < end) { requestAnimationFrame(frame); }
+            }());
+        }
+    </script>
+</body>
+</html>
